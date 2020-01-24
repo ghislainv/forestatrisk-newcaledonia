@@ -33,8 +33,7 @@
 from __future__ import division, print_function  # Python 3 compatibility
 import ee
 import time
-import os
-from google.cloud import storage
+import subprocess
 
 # Initialize
 ee.Initialize()
@@ -61,7 +60,7 @@ def run_task(iso3, extent_latlong, scale=30, proj=None,
     :param proj: The projection for the export.
     :param gs_bucket: Name of the google storage bucket to export to.
 
-    :return: Google EarthEngine task.
+    :return: Google Earth Engine task.
 
     """
 
@@ -72,65 +71,64 @@ def run_task(iso3, extent_latlong, scale=30, proj=None,
     export_coord = region.getInfo()["coordinates"]
 
     # Path to roadless products
-    path = "users/ghislainv/roadless/"
+    #path = "users/ghislainv/roadless/"
 
     # Roadless annual product (AP)
-    AP = ee.ImageCollection(path + "AnnualChanges1982_2018")
+    #AP = ee.ImageCollection(path + "AnnualChanges1982_2018")
+    AP = ee.ImageCollection('users/ClassifLandsat072015/Roadless36y/AnnualChanges1982_2018')
     AP = AP.mosaic().toByte().clip(region)
 
-    # Forest in 2018
-    # ap_2018 = AP.select(["Jan2018"])
-    # forest2018 = ap_2018.eq(1)
-
-    # Note: with version 22May2019 of Christelle product, forest
-    # at year Y if 1, 13 or 14.
-
-    # ap_allYear
-    AP_forest = AP.where(AP.eq(13).Or(AP.eq(14)), 1)
+    # ap_allYear: forest if Y = 1, 4, 5, 13 or 14.
+    AP_forest = AP.where(AP.eq(3).Or(AP.eq(4)).Or(AP.eq(5)).Or(AP.eq(13)).Or(AP.eq(14)), 1)
     ap_allYear = AP_forest.where(AP_forest.neq(1), 0)
 
-    # Forest in Jan 2015
-    ap_2015_2019 = ap_allYear.select(range(32, 37))
+    # Forest in Jan 2019
+    forest2019 = ap_allYear.select(36)
+
+    # Forest cover Jan 2015
+    ap_2015_2019 = ap_allYear.select(list(range(32, 37)))
     forest2015 = ap_2015_2019.reduce(ee.Reducer.sum())
     forest2015 = forest2015.gte(1)
-
+    
     # Forest cover Jan 2010
-    ap_2010_2019 = ap_allYear.select(range(27, 37))
+    ap_2010_2019 = ap_allYear.select(list(range(27, 37)))
     forest2010 = ap_2010_2019.reduce(ee.Reducer.sum())
     forest2010 = forest2010.gte(1)
 
     # Forest cover Jan 2005
-    ap_2005_2019 = ap_allYear.select(range(22, 37))
+    ap_2005_2019 = ap_allYear.select(list(range(22, 37)))
     forest2005 = ap_2005_2019.reduce(ee.Reducer.sum())
     forest2005 = forest2005.gte(1)
-
+    
     # Forest cover Jan 2000
-    ap_2000_2019 = ap_allYear.select(range(17, 37))
+    ap_2000_2019 = ap_allYear.select(list(range(17, 37)))
     forest2000 = ap_2000_2019.reduce(ee.Reducer.sum())
     forest2000 = forest2000.gte(1)
 
-    # Forest raster with four bands
+    # Forest raster with five bands
     forest = forest2000.addBands(forest2005).addBands(
-        forest2010).addBands(forest2015)
-    forest = forest.select([0, 1, 2, 3], ["forest2000", "forest2005",
-                                          "forest2010", "forest2015"])
+        forest2010).addBands(forest2015).addBands(forest2019)
+    forest = forest.select([0, 1, 2, 3, 4], ["forest2000", "forest2005",
+                                             "forest2010", "forest2015"
+                                             "forest2019"])
     forest = forest.set("system:bandNames", ["forest2000", "forest2005",
-                                             "forest2010", "forest2015"])
+                                             "forest2010", "forest2015",
+                                             "forest2019"])
 
     # maxPixels
     maxPix = 1e13
 
-    # Export forest to cloud storage
+    # Export forest to Google Drive
     # ! region must be lat/long coordinates with Python API.
-    task = ee.batch.Export.image.toCloudStorage(
+    task = ee.batch.Export.image.toDrive(
         image=forest,
-        description="roadless_" + iso3,
-        bucket=gs_bucket,
+        description="forest_" + iso3,
+        fileNamePrefix="forest_" + iso3,
+        folder="GEE_forestatrisk_jrc",
         region=export_coord,
         scale=scale,
         maxPixels=maxPix,
-        crs=proj,
-        fileNamePrefix="roadless/forest_" + iso3)
+        crs=proj)
     task.start()
 
     # Return task
@@ -138,34 +136,32 @@ def run_task(iso3, extent_latlong, scale=30, proj=None,
 
 
 # ee_roadless.check
-def check(gs_bucket, iso3):
+def check(gdrive, folder, iso3):
     """Function to check if the forest cover data are already present in
-    the Google Cloud Storage (GCS) bucket.
+    the Google Drive folder.
 
-    :param gs_bucket: the GCS bucket to look in.
+    RClone program is needed: https://rclone.org
+
+    :param gdrive: Google Drive remote name in rclone
+    :param folder: the Google Drive folder to look in
     :param iso3: Country ISO 3166-1 alpha-3 code.
 
     :return: A boolean indicating the presence (True) of the data in
-    the bucket.
+    the folder.
 
     """
 
-    # Connect to GCS bucket
-    client = storage.Client()
-    bucket = client.get_bucket(gs_bucket)
+    # RClone command
+    cmd = ["rclone", "ls", gdrive + ":" + folder]
+    out = subprocess.check_output(cmd).decode("utf-8")
     # Filename to find
-    fname = "roadless/forest_" + iso3
-    # Get a list of the blobs
-    iterator = bucket.list_blobs()
-    blobs = list(iterator)
-    # Loop on blobs
-    present_in_bucket = False
-    for b in blobs:
-        if b.name.find(fname) == 0:
-            present_in_bucket = True
-            break
+    fname = "forest_" + iso3
+    # Check file is present
+    present_in_folder = False
+    if fname in out:
+        present_in_folder = True
     # Return
-    return(present_in_bucket)
+    return(present_in_folder)
 
 
 # ee_roadless.download
