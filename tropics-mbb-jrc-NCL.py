@@ -98,4 +98,46 @@ def run_country(iso3):
 # Run country
 run_country(iso3[85])
 
+# ========================================================
+# Additional figures
+# ========================================================
+
+import matplotlib.pyplot as plt
+
+os.chdir("/home/ghislain/Code/forestatrisk-newcaledonia")
+far.make_dir("figures")
+
+# fcc123 with zoom
+fig_fcc = far.plot.fcc123("Asia/NCL/data/forest/fcc123.tif",
+                          maxpixels=1e8,
+                          zoom=(18530000, 18600000, -2555000, -2500000),
+                          borders="Asia/NCL/data/ctry_PROJ.shp",
+                          output_file="figures/fcc123.png",
+                          linewidth=0.5)
+plt.close(fig_fcc)
+
+# Original spatial random effects
+fig_rho_orig = far.plot.rho("Asia/NCL/output/rho_orig.tif",
+                            borders="Asia/NCL/data/ctry_PROJ.shp",
+                            output_file="figures/rho_orig.png")
+plt.close(fig_rho_orig)
+
+# Spatial probability of deforestation
+fig_prob = far.plot.prob("Asia/NCL/output/prob.tif",
+                         maxpixels=1e8,
+                         legend=True,
+                         borders="Asia/NCL/data/ctry_PROJ.shp",
+                         output_file="figures/prob.png",
+                         linewidth=0.5)
+plt.close(fig_prob)
+
+# fcc_2100
+fig_fcc = far.plot.fcc("Asia/NCL/output/fcc_2100.tif",
+                       maxpixels=1e8,
+                       borders="Asia/NCL/data/ctry_PROJ.shp",
+                       output_file="figures/fcc_2100.png",
+                       linewidth=0.5)
+plt.close(fig_fcc)
+
+
 # End
