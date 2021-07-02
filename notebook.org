@@ -16,7 +16,7 @@
 #+TAGS: Blog(B) noexport(n) Stats(S)
 #+TAGS: Ecology(E) R(R) OrgMode(O) Python(P)
 #+EXPORT_SELECT_TAGS: Blog
-#+OPTIONS: H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS: H:3 num:t toc:nil \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
 #+EXPORT_SELECT_TAGS: export
 #+EXPORT_EXCLUDE_TAGS: noexport
 
@@ -41,15 +41,20 @@
 :  of 2021-03-28, modified by Debian
 : org version: 9.3
 
+
 * Introduction
 
 This notebook presents the approach used to model and forecast
 deforestation in New Caledonia.
 
-The approach is based on a methodology described in "*Vieilledent G.,
-C. Vancutsem, and F. Achard.* Forest refuge areas and carbon emissions
-from tropical deforestation in the 21^st century". More information on
-the method at the ForestAtRisk website: [[https://forestatrisk.cirad.fr]].
+The approach is based on a methodology described in the following
+article:
+
+*Vieilledent G., C. Vancutsem, and F. Achard.* Forest refuge areas and
+carbon emissions from tropical deforestation in the 21^st century.
+
+More information on the method can be find at the ForestAtRisk
+website: [[https://forestatrisk.cirad.fr]].
 
 ** Importing Python modules
 
@@ -144,7 +149,7 @@ configure the access to your Google Drive, follow these [[https://rclone.org/dri
 
 *** Access to WDPA API
 
-We will be using the [[https://ecology.ghislainv.fr/pywdpa/][=pywda=]] Python package to collect the data on
+We will be using the [[https://ecology.ghislainv.fr/pywdpa/][pywda]] Python package to collect the data on
 protected areas from the World Database on Protected Areas (WDPA) at
 [[https://www.protectedplanet.net]]. To access the Protected Planet API,
 you must first obtain a Personal API Token by filling in the form
@@ -178,7 +183,7 @@ iso3 = "NCL"
 
 We compute the past forest cover change from Vancutsem et al. 2021
 using Google Earth Engine. The argument =gdrive_remote_rclone= of the
-function [[https://ecology.ghislainv.fr/forestatrisk/subpackages/forestatrisk.build_data.html#forestatrisk.build_data.data.country_forest_run][=far.data.country_forest_run=]] specifies the name of the
+function [[https://ecology.ghislainv.fr/forestatrisk/subpackages/forestatrisk.build_data.html#forestatrisk.build_data.data.country_forest_run][far.data.country_forest_run()]] specifies the name of the
 Google Drive remote for rclone. The argument =gdrive_folder= specifies
 the name of the Google Drive folder to use.
 
@@ -236,7 +241,7 @@ far.data.country_compute(
 ** Adding data on ultramafic soils
 
 Data can be downloaded from [[https://georep-dtsi-sgt.opendata.arcgis.com/datasets/40d5b1a5afa244b1a73dd3620df075de_0/explore?location=-21.087852%2C165.489950%2C8.00][Géorep]]. We unzip the shapefile in the
-folder ==gisdata/vectors/peridotite/=, reproject, and rasterize the
+folder =gisdata/vectors/peridotite/=, reproject, and rasterize the
 data at 30m.
 
 #+begin_src shell :results output :session :exports both
@@ -364,7 +369,7 @@ fig_fcc23 = far.plot.fcc(
 * Sampling
 ** Sampling the observations
  
-#+begin_src python :results output :session :exports code
+#+begin_src python :results empty :session :exports code
 # Sample points
 dataset = far.sample(nsamp=10000, adapt=True, seed=1234, csize=10,
                      var_dir="data",
@@ -374,23 +379,7 @@ dataset = far.sample(nsamp=10000, adapt=True, seed=1234, csize=10,
 #+end_src
 
 #+RESULTS:
-#+begin_example
-Sample 2x 10000 pixels (deforested vs. forest)
-Divide region in 2744 blocks
-Compute number of deforested and forest pixels per block
-0%0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%100%
-Draw blocks at random
-Draw pixels at random in blocks
-0%0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%100%
-Compute center of pixel coordinates
-Compute number of 10 x 10 km spatial cells
-1634 cells (38 x 43)
-Identify cell number from XY coordinates
-Make virtual raster with variables as raster bands
-Extract raster values for selected pixels
-0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%100%100%
-Export results to file output/sample.txt
-#+end_example
+
 
 #+begin_src python :results output :session :exports both
 # Remove NA from data-set (otherwise scale() and
@@ -842,77 +831,102 @@ for i in range(ndates_fut):
 
 Forest cover change for the period 2000-2010-2020
 
-#+begin_src python :results output :session :exports code
+#+begin_src python :results file :session :exports code
 # Plot forest
+ofile = "output/fcc123.png"
 fig_fcc123 = far.plot.fcc123(
-  input_fcc_raster="data/forest/fcc123.tif",
-  maxpixels=1e8,
-  output_file="output/fcc123.png",
-  borders="data/ctry_PROJ.shp",
-  linewidth=0.3,
-  figsize=(6, 5), dpi=500)
+    input_fcc_raster="data/forest/fcc123.tif",
+    maxpixels=1e8,
+    output_file=ofile,
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.3,
+    figsize=(6, 5), dpi=500)
+ofile
 #+end_src
 
 #+RESULTS:
-: Build overview
+[[file:output/fcc123.png]]
 
 ** Spatial random effects
 
-#+begin_src python :results output :session :exports code
+#+begin_src python :results file :session :exports code
 # Original spatial random effects
-fig_rho_orig = far.plot.rho("output/rho_orig.tif",
-			  borders="data/ctry_PROJ.shp",
-			  linewidth=0.5,
-			  output_file="output/rho_orig.png",
-			  figsize=(9,5), dpi=80)
+ofile = "output/rho_orig.png"
+fig_rho_orig = far.plot.rho(
+    "output/rho_orig.tif",
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.5,
+    output_file=ofile,
+    figsize=(9,5), dpi=80)
 
 # Interpolated spatial random effects
-fig_rho = far.plot.rho("output/rho.tif",
-		     borders="data/ctry_PROJ.shp",
-		     linewidth=0.5,
-		     output_file="output/rho.png",
-		     figsize=(9,5), dpi=80)
-#+end_src
-
-** Spatial probability of deforestation
-
-#+begin_src python :results output :session :exports code
-# Spatial probability of deforestation
-fig_prob = far.plot.prob("output/prob.tif",
-		       maxpixels=1e8,
-		       borders="data/ctry_PROJ.shp",
-		       linewidth=0.3,
-		       legend=True,
-		       output_file="output/prob.png",
-		       figsize=(6, 5), dpi=500)
-#+end_src
-
-** Future forest cover
-
-#+begin_src python :results output :session :exports code
-# Projected forest cover change (2020-2050)
-fcc_2050 = far.plot.fcc("output/fcc_2050.tif",
-		      maxpixels=1e8,
-		      borders="data/ctry_PROJ.shp",
-		      linewidth=0.3,
-		      output_file="output/fcc_" + dates_fut[i] + ".png",
-		      figsize=(6, 5), dpi=500)
+ofile = "output/rho.png"
+fig_rho = far.plot.rho(
+    "output/rho.tif",
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.5,
+    output_file=ofile,
+    figsize=(9,5), dpi=80)
+ofile
 #+end_src
 
 #+RESULTS:
-: Build overview
+[[file:output/rho.png]]
 
-#+begin_src python :results output :session :exports code
-# Projected forest cover change (2020-2100)
-fcc_2100 = far.plot.fcc("output/fcc_2100.tif",
-		      maxpixels=1e8,
-		      borders="data/ctry_PROJ.shp",
-		      linewidth=0.3,
-		      output_file="output/fcc_" + dates_fut[i] + ".png",
-                          figsize=(6, 5), dpi=500)
+** Spatial probability of deforestation
+
+#+begin_src python :results file :session :exports code
+# Spatial probability of deforestation
+ofile = "output/prob.png"
+fig_prob = far.plot.prob(
+    "output/prob.tif",
+    maxpixels=1e8,
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.3,
+    legend=True,
+    output_file=ofile,
+    figsize=(6, 5), dpi=500)
+ofile
 #+end_src
 
-* Environment setup and test    :noexport:
+#+RESULTS:
+[[file:output/prob.png]]
+
+** Future forest cover
+
+#+begin_src python :results file :session :exports code
+ofile = "output/fcc_2050.png"
+# Projected forest cover change (2020-2050)
+fcc_2050 = far.plot.fcc(
+    "output/fcc_2050.tif",
+    maxpixels=1e8,
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.3,
+    output_file=ofile,
+    figsize=(6, 5), dpi=500)
+ofile
+#+end_src
+
+#+RESULTS:
+[[file:output/fcc_2050.png]]
+
+#+begin_src python :results file :session :exports code
+# Projected forest cover change (2020-2100)
+ofile = "output/fcc_2100.png"
+fcc_2100 = far.plot.fcc(
+    "output/fcc_2100.tif",
+    maxpixels=1e8,
+    borders="data/ctry_PROJ.shp",
+    linewidth=0.3,
+    output_file=ofile,
+    figsize=(6, 5), dpi=500)
+ofile
+#+end_src
+
+#+RESULTS:
+[[file:output/fcc_2100.png]]
+
+* Environment setup and test :noexport:
 
 #+BEGIN_SRC python :results value
 import sys
@@ -922,6 +936,7 @@ return(sys.executable)
 
 #+RESULTS:
 : /home/ghislain/.pyenv/versions/miniconda3-latest/envs/conda-far/bin/python
+
 
 These definitions are necessary for having babel use the correct
 virtual environment.
@@ -937,7 +952,5 @@ options:
 
 Local Variables:
 org-babel-python-command: "/home/ghislain/.pyenv/versions/miniconda3-latest/envs/conda-far/bin/python"
-org-babel-after-execute-hook: (lambda () (org-display-inline-images nil t) (org-redisplay-inline-images))
-org-confirm-babel-evaluate: nil
-org-babel-sh-command: "/bin/zsh"
-End: :noexport
+org-babel-sh-command: "/bin/bash"
+End:
